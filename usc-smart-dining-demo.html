@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>USC Smart Dining - MVP Demo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        h1 { color: #333; margin-bottom: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+        .panel { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h2 { margin-bottom: 15px; color: #333; font-size: 18px; }
+        .alert { padding: 12px; margin-bottom: 10px; border-radius: 4px; border-left: 4px solid; }
+        .alert.critical { background: #ffcccc; border-color: #cc0000; color: #990000; }
+        .alert.warning { background: #fff4cc; border-color: #ffcc00; color: #996600; }
+        .alert.info { background: #cce5ff; border-color: #0066cc; color: #004080; }
+        .forecast-item { padding: 10px; margin: 8px 0; background: #f9f9f9; border-radius: 4px; }
+        .bar { height: 30px; background: #ffcc00; margin: 5px 0; border-radius: 3px; position: relative; }
+        .bar-critical { background: #cc0000; }
+        .bar-label { position: absolute; right: 10px; top: 5px; color: white; font-weight: bold; }
+        .stat { display: inline-block; margin: 10px 20px 10px 0; }
+        .stat-value { font-size: 32px; font-weight: bold; color: #cc0000; }
+        .stat-label { font-size: 14px; color: #666; }
+        select { padding: 8px; margin-bottom: 15px; border-radius: 4px; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍽️ USC Smart Dining - Demand Forecasting Dashboard</h1>
+
+        <div>
+            <label>Dining Hall: </label>
+            <select id="hallSelect" onchange="updateDashboard()">
+                <option>EVK</option>
+                <option>Parkside</option>
+            </select>
+            <label>Date: </label>
+            <select id="dateSelect" onchange="updateDashboard()">
+                <option>Tomorrow (Dec 2, 2025)</option>
+                <option>Wednesday (Dec 3, 2025)</option>
+            </select>
+        </div>
+
+        <div class="panel" style="margin-top: 20px;">
+            <div class="stat">
+                <div class="stat-value">87%</div>
+                <div class="stat-label">Forecast Accuracy</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">35%</div>
+                <div class="stat-label">Waste Reduction</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">92%</div>
+                <div class="stat-label">Stockout Prevention</div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="panel">
+                <h2>🚨 Critical Alerts</h2>
+                <div id="alerts"></div>
+            </div>
+
+            <div class="panel">
+                <h2>📊 Demand Forecast - Lunch (12:00 PM)</h2>
+                <div id="forecasts"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const menuItems = [
+            { name: "Chicken Tenders", popularity: 0.9 },
+            { name: "Pizza", popularity: 0.95 },
+            { name: "Burger", popularity: 0.85 },
+            { name: "Pasta", popularity: 0.75 },
+            { name: "Grilled Vegetables", popularity: 0.4 },
+            { name: "Salad Bar", popularity: 0.5 },
+        ];
+
+        function generateForecast(hall, item) {
+            const baseMultiplier = hall === "EVK" ? 1.2 : 1.0;
+            const base = 400 * item.popularity * baseMultiplier;
+            return Math.round(base + (Math.random() - 0.5) * 40);
+        }
+
+        function updateDashboard() {
+            const hall = document.getElementById('hallSelect').value;
+
+            // Generate alerts
+            const alertsHtml = menuItems
+                .map(item => {
+                    const demand = generateForecast(hall, item);
+                    if (item.popularity > 0.8 && demand > 150) {
+                        return `
+                            <div class="alert critical">
+                                <strong>CRITICAL:</strong> ${item.name}<br>
+                                Predicted demand: ${demand} portions<br>
+                                <strong>Recommended prep: ${Math.round(demand * 1.1)} portions</strong>
+                            </div>
+                        `;
+                    } else if (item.popularity > 0.7 && demand > 100) {
+                        return `
+                            <div class="alert warning">
+                                <strong>WARNING:</strong> ${item.name}<br>
+                                Predicted demand: ${demand} portions<br>
+                                Recommended prep: ${Math.round(demand * 1.05)} portions
+                            </div>
+                        `;
+                    } else if (item.popularity < 0.6 && demand < 80) {
+                        return `
+                            <div class="alert info">
+                                <strong>LOW DEMAND:</strong> ${item.name}<br>
+                                Predicted: ${demand} portions - Reduce prep to minimize waste
+                            </div>
+                        `;
+                    }
+                    return '';
+                })
+                .join('');
+
+            document.getElementById('alerts').innerHTML = alertsHtml;
+
+            // Generate forecast bars
+            const forecastsHtml = menuItems
+                .map(item => {
+                    const demand = generateForecast(hall, item);
+                    const width = Math.min(100, (demand / 200) * 100);
+                    const isCritical = demand > 150;
+                    return `
+                        <div class="forecast-item">
+                            <strong>${item.name}</strong>
+                            <div class="bar ${isCritical ? 'bar-critical' : ''}" style="width: ${width}%">
+                                <span class="bar-label">${demand} portions</span>
+                            </div>
+                        </div>
+                    `;
+                })
+                .join('');
+
+            document.getElementById('forecasts').innerHTML = forecastsHtml;
+        }
+
+        updateDashboard();
+    </script>
+</body>
+</html>
