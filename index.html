@@ -242,6 +242,15 @@
             background: #e8f5e9;
             color: #2e7d32;
         }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .menu-card, .alert, .forecast-item {
+            animation: slideIn 0.3s ease-out;
+        }
         .crowd-indicator {
             display: flex;
             align-items: center;
@@ -297,16 +306,19 @@
 
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-value">87%</div>
-                <div class="stat-label">Forecast Accuracy</div>
+                <div class="stat-value">-15%</div>
+                <div class="stat-label">Food Cost Reduction</div>
+                <div style="font-size: 12px; margin-top: 8px; opacity: 0.8;">By reducing over-ordering and prep waste</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">35%</div>
-                <div class="stat-label">Waste Reduction</div>
+                <div class="stat-value">-40%</div>
+                <div class="stat-label">Daily Waste Volume</div>
+                <div style="font-size: 12px; margin-top: 8px; opacity: 0.8;">From 200lbs to 120lbs per hall</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">92%</div>
-                <div class="stat-label">Stockout Prevention</div>
+                <div class="stat-value">1.2 tons</div>
+                <div class="stat-label">Food Saved Monthly</div>
+                <div style="font-size: 12px; margin-top: 8px; opacity: 0.8;">Equivalent to car miles off the road</div>
             </div>
         </div>
 
@@ -445,10 +457,20 @@
         function updateStudentView() {
             const hall = document.getElementById('studentHallSelect').value;
 
-            // Crowd level
-            const crowdLevel = Math.random() * 100;
+            // Crowd level (time-based simulation)
+            const hour = new Date().getHours();
+            let crowdLevel;
+            if (hour >= 12 && hour <= 13) {
+                crowdLevel = 75 + Math.random() * 20; // Lunch rush
+            } else if (hour >= 18 && hour <= 19) {
+                crowdLevel = 70 + Math.random() * 20; // Dinner rush
+            } else {
+                crowdLevel = 20 + Math.random() * 30; // Off-peak
+            }
+
             const crowdText = crowdLevel > 70 ? 'Busy' : crowdLevel > 40 ? 'Moderate' : 'Not Busy';
             const crowdColor = crowdLevel > 70 ? '#c62828' : crowdLevel > 40 ? '#FFCC00' : '#4caf50';
+            const bestTime = hall === 'EVK' ? '2:00 PM - 4:00 PM' : '1:30 PM - 3:30 PM';
 
             document.getElementById('crowdLevel').innerHTML = `
                 <div style="text-align: center; padding: 20px;">
@@ -463,26 +485,46 @@
                     <div style="color: #666; margin-top: 10px;">
                         Estimated wait time: ${Math.round(crowdLevel / 20)} minutes
                     </div>
+                    <div style="margin-top: 20px; padding: 15px; background: #e8f5e9; border-radius: 8px; color: #2e7d32; font-weight: 600;">
+                        💡 Best time to visit: ${bestTime}<br>
+                        <span style="font-size: 13px; font-weight: 400;">Typically less crowded</span>
+                    </div>
                 </div>
             `;
 
-            // Menu items
+            // Menu items with better badges
             const menuHtml = menuItems
                 .map(item => {
                     const demand = generateForecast(hall, item);
                     const isHighDemand = item.popularity > 0.8;
-                    const availability = Math.random() > 0.2 ? 'Available Now' : 'Running Low';
+                    const isMediumDemand = item.popularity > 0.6 && item.popularity <= 0.8;
+
+                    let badge = '';
+                    let badgeClass = '';
+                    let message = '';
+
+                    if (isHighDemand) {
+                        badge = '🔥 Very Popular Today';
+                        badgeClass = 'popular';
+                        message = 'Get it early! Expected to run out by 1:00 PM';
+                    } else if (isMediumDemand) {
+                        badge = '⚠️ Limited Batch';
+                        badgeClass = 'popular';
+                        message = 'Moderate demand - Available most of lunch';
+                    } else {
+                        badge = '✅ Plenty Available';
+                        badgeClass = 'available';
+                        message = 'Low demand - Available all day';
+                    }
 
                     return `
                         <div class="menu-card ${isHighDemand ? 'high-demand' : ''}">
                             <h3>${item.name}</h3>
                             <div>
-                                ${isHighDemand ? '<span class="badge popular">🔥 Popular Item</span>' : ''}
-                                <span class="badge available">${availability}</span>
+                                <span class="badge ${badgeClass}">${badge}</span>
                             </div>
                             <div style="margin-top: 8px; color: #666; font-size: 14px;">
-                                Expected demand: ${isHighDemand ? 'High' : item.popularity > 0.6 ? 'Medium' : 'Low'}
-                                ${isHighDemand ? '(Get it early!)' : ''}
+                                ${message}
                             </div>
                         </div>
                     `;
